@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Document Creator & PDF Exporter</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        .paper-page {
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            font-family: 'Times New Roman', Times, serif;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col md:flex-row">
+
+    <div class="w-full md:w-1/3 bg-white p-6 shadow-lg flex flex-col gap-4 z-10 overflow-y-auto max-h-screen">
+        <h1 class="text-2xl font-bold text-slate-800">Doc & Exam Creator</h1>
+        <p class="text-sm text-slate-500">Type content, configure your paper, and share directly via device apps.</p>
+        
+        <hr class="border-slate-200">
+
+        <div class="bg-amber-50 p-4 rounded-lg border border-amber-200 flex flex-col gap-2">
+            <h3 class="text-xs font-bold text-amber-800 uppercase tracking-wide">Upload Custom Paper Template</h3>
+            <p class="text-xs text-amber-700">Select an empty paper design image from your gallery:</p>
+            <input type="file" id="imageUpload" accept="image/*" class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-amber-600 file:text-white hover:file:bg-amber-700 cursor-pointer">
+            <button id="clearBgBtn" class="hidden text-left text-xs text-red-600 font-semibold underline mt-1">Remove Uploaded Paper Template</button>
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+            <label class="text-sm font-semibold text-slate-700">Type Content or Exam Questions</label>
+            <textarea id="docInput" class="w-full h-40 p-3 border border-slate-300 rounded-lg focus:outline-blue-500 font-mono text-sm" placeholder="Type your story, questions, or math equations here..."></textarea>
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+            <label class="text-sm font-semibold text-slate-700">Target PDF Length</label>
+            <select id="pageLength" class="w-full p-2 border border-slate-300 rounded-lg bg-slate-50">
+                <option value="1">As Written (Standard)</option>
+                <option value="3">Expand to 3 Pages</option>
+                <option value="5">Expand to 5 Pages</option>
+                <option value="10">Expand to 10 Pages (Full Story/Exam)</option>
+            </select>
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+            <label class="text-sm font-semibold text-slate-700">Change Paper Tint Color</label>
+            <div class="flex items-center gap-3">
+                <input type="color" id="colorPicker" value="#ffffff" class="w-10 h-10 border border-slate-300 rounded cursor-pointer">
+                <span class="text-xs text-slate-500 font-mono" id="colorHex">#ffffff</span>
+            </div>
+        </div>
+
+        <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
+            <h3 class="text-xs font-bold text-blue-800 uppercase tracking-wide">Quick Calculator Tool</h3>
+            <div class="flex gap-2 mt-1.5">
+                <input type="text" id="calcInput" class="w-full p-1.5 text-xs border border-blue-200 rounded bg-white" placeholder="e.g., 45*12 or 120/4">
+                <button onclick="runQuickCalc()" class="bg-blue-600 text-white text-xs px-3 py-1 rounded hover:bg-blue-700 transition">Solve</button>
+            </div>
+            <div id="calcResult" class="text-xs font-semibold text-slate-700 mt-1"></div>
+        </div>
+
+        <div class="flex flex-col gap-2 mt-auto">
+            <button id="shareBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg shadow transition duration-150 flex items-center justify-center gap-2 cursor-pointer">
+                <span id="shareBtnText">📲 Process & Share via Apps</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="w-full md:w-2/3 p-8 flex justify-center items-start overflow-y-auto max-h-screen">
+        <div class="w-full max-w-2xl">
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Live Document Preview</h2>
+            
+            <div id="pdfCaptureArea" class="w-full">
+                <div id="paperSheet" class="paper-page min-h-[842px] w-full p-12 bg-white text-slate-900 border border-slate-200 rounded-sm">
+                    <div id="previewContent" class="whitespace-pre-line text-base leading-relaxed">
+                        <div class="text-center font-bold text-xl uppercase mb-6 tracking-wide">Term 2 Mathematics Examination</div>
+                        <div class="flex justify-between text-sm font-semibold border-b-2 border-slate-800 pb-2 mb-6">
+                            <span>Student Name: _________________</span>
+                            <span>Date: _________</span>
+                        </div>
+                        <p class="font-bold mb-4">Instructions: Answer all questions clearly in the spaces provided.</p>
+                        <p class="mb-2">1. Solve the following algebraic expression for x:</p>
+                        <p class="italic ml-4 mb-6">2x + 15 = 45</p>
+                        <p class="mb-2">2. A train travels at a speed of 60 km/h. Calculate the total distance covered in 4 hours:</p>
+                        <p class="italic ml-4 mb-6">Distance = Speed × Time</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const docInput = document.getElementById('docInput');
+        const previewContent = document.getElementById('previewContent');
+        const paperSheet = document.getElementById('paperSheet');
+        const colorPicker = document.getElementById('colorPicker');
+        const colorHex = document.getElementById('colorHex');
+        const pageLength = document.getElementById('pageLength');
+        const shareBtn = document.getElementById('shareBtn');
+        const shareBtnText = document.getElementById('shareBtnText');
+        const imageUpload = document.getElementById('imageUpload');
+        const clearBgBtn = document.getElementById('clearBgBtn');
+
+        docInput.value = `Term 2 Mathematics Examination\n\nStudent Name: _________________    Date: _________\n\nInstructions: Answer all questions clearly in the spaces provided.\n\n1. Solve the following algebraic expression for x:\n   2x + 15 = 45\n\n2. A train travels at a speed of 60 km/h. Calculate the total distance covered in 4 hours:\n   Distance = Speed × Time`;
+
+        imageUpload.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    paperSheet.style.backgroundImage = `url('${event.target.result}')`;
+                    clearBgBtn.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        clearBgBtn.addEventListener('click', function() {
+            paperSheet.style.backgroundImage = 'none';
+            imageUpload.value = '';
+            clearBgBtn.classList.add('hidden');
+        });
+
+        docInput.addEventListener('input', updatePreviewContent);
+
+        colorPicker.addEventListener('input', (e) => {
+            const selectedColor = e.target.value;
+            paperSheet.style.backgroundColor = selectedColor;
+            colorHex.innerText = selectedColor;
+        });
+
+        function updatePreviewContent() {
+            let baseText = docInput.value;
+            let finalHtml = '';
+            const targetMultiplier = parseInt(pageLength.value);
+
+            if (targetMultiplier > 1) {
+                finalHtml += `<div class="text-xs text-red-500 font-bold mb-4 border border-red-200 bg-red-50 p-2 rounded">[Simulated AI Auto-Expansion Enabled: Padding out to reach ${targetMultiplier} pages]</div>`;
+                
+                for (let i = 1; i <= targetMultiplier; i++) {
+                    finalHtml += `<div class="mb-8">`;
+                    finalHtml += `<div class="text-right text-xs text-slate-400 mb-2">Section Block ${i} of ${targetMultiplier}</div>`;
+                    finalHtml += baseText.replace(/\n/g, '<br>');
+                    finalHtml += `</div>`;
+                    
+                    if (i < targetMultiplier) {
+                        finalHtml += `<div class="html2pdf__page-break my-12 border-t-2 border-dashed border-slate-400 pt-4 text-center text-xs text-slate-400 font-mono tracking-widest">NEXT PAGE STARTS HERE</div>`;
+                    }
+                }
+            } else {
+                finalHtml = baseText.replace(/\n/g, '<br>');
+            }
+            previewContent.innerHTML = finalHtml;
+        }
+
+        pageLength.addEventListener('change', updatePreviewContent);
+
+        function runQuickCalc() {
+            const input = document.getElementById('calcInput').value;
+            const resultDiv = document.getElementById('calcResult');
+            try {
+                const sanitizedInput = input.replace(/[^0-9\+\-\*\/\(\)\.]/g, '');
+                const result = Function(`"use strict"; return (${sanitizedInput})`)();
+                if (result !== undefined) {
+                    resultDiv.innerHTML = `Result: <span class="text-blue-600 font-bold">${result}</span>`;
+                    docInput.value += `\nCalculation: ${input} = ${result}`;
+                    updatePreviewContent();
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="text-red-500 text-xs">Invalid math format</span>`;
+            }
+        }
+
+        function getPdfOptions() {
+            return {
+                margin:       [0.4, 0.4, 0.4, 0.4],
+                filename:     'Examination_Paper.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { 
+                    scale: 2, 
+                    useCORS: true, 
+                    allowTaint: true,
+                    letterRendering: true
+                },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+        }
+
+        shareBtn.addEventListener('click', async () => {
+            shareBtnText.innerText = "Processing & Formatting Layout...";
+            shareBtn.disabled = true;
+            const element = document.getElementById('pdfCaptureArea');
+            
+            setTimeout(async () => {
+                try {
+                    // Create raw binary blob layout
+                    const pdfWorker = html2pdf().set(getPdfOptions()).from(element).output('blob');
+                    const pdfBlob = await pdfWorker;
+                    
+                    // Bundle blob data safely into a file structure
+                    const file = new File([pdfBlob], "Examination_Paper.pdf", { type: "application/pdf" });
+
+                    // Invoke web interface sharing capabilities
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            files: [file],
+                            title: 'Examination Document',
+                            text: 'Please find attached the custom examination paper.'
+                        });
+                    } else {
+                        // Safe fallback handling for system setups with closed sharing nodes
+                        alert("App sharing isn't natively supported on this browser version. Your PDF is downloading directly instead.");
+                        html2pdf().set(getPdfOptions()).from(element).save();
+                    }
+                } catch (error) {
+                    console.error("Sharing processing broken:", error);
+                    alert("A structure issue occurred. Downloading directly instead.");
+                    html2pdf().set(getPdfOptions()).from(element).save();
+                } finally {
+                    shareBtnText.innerText = "📲 Process & Share via Apps";
+                    shareBtn.disabled = false;
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html>
